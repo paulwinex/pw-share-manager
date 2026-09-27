@@ -431,8 +431,15 @@ def _plan_mount_linux(
     opts = (
         f"username={username},password={password},port={port},"
         f"uid={os.getuid()},gid={os.getgid()},dir_mode=0755,file_mode=0644"
+        f"vers=3.1.1,rsize=1048576,wsize=1048576,cache=strict,directio,noserverino"
     )
-    cmd = ["sudo", "-S", "mount", "-t", "cifs", source, target, "-o", opts]
+    cmd = [
+        "sudo",
+        "-S",
+        "mount",
+        "-t", "cifs",
+        source, target,
+        "-o", opts]
     return cmd, target, True
 
 
