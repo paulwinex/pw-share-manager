@@ -430,8 +430,10 @@ def _plan_mount_linux(
     source = share_source(host, share)
     opts = (
         f"username={username},password={password},port={port},"
-        f"uid={os.getuid()},gid={os.getgid()},dir_mode=0755,file_mode=0644"
-        f"vers=3.1.1,rsize=1048576,wsize=1048576,cache=strict,directio,noserverino"
+        f"uid={os.getuid()},gid={os.getgid()},"
+        f"dir_mode=0755,file_mode=0644,"
+        f"vers=3.1.1,rsize=1048576,wsize=1048576,"
+        f"cache=strict,noserverino"
     )
     cmd = [
         "sudo",
@@ -578,6 +580,7 @@ def _mount_shares(cfg: Config, shares: list[dict], root: str) -> int:
                 errors += 1
                 print(f"error mounting {name}: {msg}")
                 continue
+        print(f"  $ {' '.join(_redact_cmd(cmd))}")     # <-- печатаем команду (с маскировкой пароля)
         ok, msg = run_cmd(cmd)
         if ok:
             add_mount(name, share_source(host, name), target)
@@ -586,6 +589,22 @@ def _mount_shares(cfg: Config, shares: list[dict], root: str) -> int:
             errors += 1
             print(f"error mounting {name}: {msg}")
     return errors
+
+
+def _redact_cmd(cmd: list[str]) -> list[str]:
+    """Hide the password value in a command line for printing."""
+    out = []
+    redact_next = False
+    for tok in cmd:
+        if redact_next:
+            out.append("****")
+            redact_next = False
+            continue
+        if tok.startswith("password="):
+            out.append("password=****")
+            continue
+        out.append(tok)
+    return out
 
 
 def cmd_mount(cfg: Config, args: argparse.Namespace) -> int:
