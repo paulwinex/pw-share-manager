@@ -197,7 +197,8 @@ def _ask_sudo_password() -> str:
 
 
 def _ask_smb_password(username: str, host: str) -> str:
-    return _getpass(f"Password for {username}@{host}: ")
+    return _getpass(f"Password for NAS server \n({username}@{host}): ")
+    # return _getpass(f"Password for {username}@{host}: ")
 
 
 # ---------------------------------------------------------------------------

@@ -28,7 +28,9 @@ async def available_dirs(session: AsyncSession = Depends(get_session)) -> list[s
 async def create_share(
     body: ShareCreate, session: AsyncSession = Depends(get_session)
 ) -> ShareOut:
-    share = await services.create_share(session, body.name, body.path, body.comment)
+    share = await services.create_share(
+        session, body.name, body.path, body.comment, body.wide_links
+    )
     return ShareOut.model_validate(share)
 
 
@@ -36,7 +38,9 @@ async def create_share(
 async def update_share(
     share_id: str, body: ShareUpdate, session: AsyncSession = Depends(get_session)
 ) -> ShareOut:
-    share = await services.update_share(session, share_id, body.name, body.path, body.comment)
+    share = await services.update_share(
+        session, share_id, body.name, body.path, body.comment, body.wide_links
+    )
     return ShareOut.model_validate(share)
 
 

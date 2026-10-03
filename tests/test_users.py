@@ -100,7 +100,10 @@ def test_delete_user_cascade(client, auth, fake_runner, db_path):
     created = create_user(client, auth).json()
 
     conn = sqlite3.connect(db_path)
-    conn.execute("INSERT INTO shares (id, name, path) VALUES ('s1', 'photos', 'photos')")
+    conn.execute(
+        "INSERT INTO shares (id, name, path, wide_links)"
+        " VALUES ('s1', 'photos', 'photos', 0)"
+    )
     conn.execute(
         "INSERT INTO group_shares (group_id, share_id) "
         "SELECT id, 's1' FROM groups WHERE name='alice'"

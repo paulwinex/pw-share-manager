@@ -42,6 +42,13 @@ def _migrate(sync_conn) -> None:
     }
     if "comment" not in columns:
         sync_conn.execute(text("ALTER TABLE shares ADD COLUMN comment VARCHAR(255)"))
+    if "wide_links" not in columns:
+        # Existing rows keep Samba's default: symlinks stay inside the share.
+        sync_conn.execute(
+            text(
+                "ALTER TABLE shares ADD COLUMN wide_links BOOLEAN NOT NULL DEFAULT 0"
+            )
+        )
 
     sync_conn.execute(text("""
         CREATE TABLE IF NOT EXISTS refresh_tokens (

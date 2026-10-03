@@ -7,12 +7,14 @@ class ShareCreate(BaseModel):
     name: str = Field(pattern=NAME_PATTERN)
     path: str = ""
     comment: str = Field(default="", max_length=255)
+    wide_links: bool = False
 
 
 class ShareUpdate(BaseModel):
     name: str = Field(pattern=NAME_PATTERN)
     path: str = ""
     comment: str = Field(default="", max_length=255)
+    wide_links: bool = False
 
 
 class ShareOut(BaseModel):
@@ -22,3 +24,4 @@ class ShareOut(BaseModel):
     name: str
     path: str
     comment: str | None
+    wide_links: bool

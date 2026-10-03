@@ -25,6 +25,14 @@ export interface ShareOut {
   name: string;
   path: string;
   comment: string | null;
+  wide_links: boolean;
+}
+
+export interface ShareInput {
+  name: string;
+  path: string;
+  comment: string;
+  wide_links: boolean;
 }
 
 export interface SyncReport {

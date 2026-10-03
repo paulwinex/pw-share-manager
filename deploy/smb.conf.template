@@ -4,6 +4,7 @@
     security = user
     passdb backend = tdbsam
     map to guest = never
+    unix extensions = no
     log level = 1
     log file = /var/log/samba/%m.log
     max log size = 1024

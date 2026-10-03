@@ -12,7 +12,9 @@ Nothing needs to be installed on the host — only Docker.
   and a Samba account (`useradd` + `smbpasswd`).
 - **Groups** — every user gets a personal group (RW, cannot be deleted).
 - **Shares** — registered in the Samba registry and exported from a directory inside
-  the share root (the directory must already exist on the server).
+  the share root (the directory must already exist on the server). Each share has a
+  **Wide symlinks** option (Samba `wide links`): off by default, which is what you want
+  unless symlinks in the share point outside it.
 - **Access** — group members get the group's shares. Permissions: `rw` / `ro`.
   If a user is in several groups, rights combine (RW wins).
 - **Temporary access** — a member can have an `expires_at`; a background scheduler

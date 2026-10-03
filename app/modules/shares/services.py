@@ -49,7 +49,11 @@ async def get_share(session: AsyncSession, share_id: str) -> Share:
 
 
 async def create_share(
-    session: AsyncSession, name: str, path: str = "", comment: str = ""
+    session: AsyncSession,
+    name: str,
+    path: str = "",
+    comment: str = "",
+    wide_links: bool = False,
 ) -> Share:
     resolved = resolve_share_path(path) or resolve_share_path(name)
 
@@ -61,7 +65,7 @@ async def create_share(
 
     _ensure_path_exists(resolved)
 
-    share = Share(name=name, path=resolved, comment=comment)
+    share = Share(name=name, path=resolved, comment=comment, wide_links=wide_links)
     session.add(share)
     await session.commit()
 
@@ -75,6 +79,7 @@ async def update_share(
     name: str,
     path: str,
     comment: str,
+    wide_links: bool = False,
 ) -> Share:
     share = await get_share(session, share_id)
 
@@ -95,6 +100,7 @@ async def update_share(
     share.name = name
     share.path = resolved
     share.comment = comment
+    share.wide_links = wide_links
     await session.commit()
 
     await sync_engine.sync(session)

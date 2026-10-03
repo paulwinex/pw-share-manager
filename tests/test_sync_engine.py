@@ -44,6 +44,77 @@ async def _seed_access(session):
     await session.commit()
 
 
+async def _seed_share(session, **share_kwargs):
+    """One user, one group, one share — the minimum for sync to export it."""
+    alice = User(username="alice", password_hash="x")
+    group = Group(name="g1")
+    share = Share(name="photos", path="photos", **share_kwargs)
+    session.add_all([alice, group, share])
+    await session.flush()
+    session.add(GroupShare(group_id=group.id, share_id=share.id))
+    session.add(UserGroup(user_id=alice.id, group_id=group.id, access_level=AccessLevel.RO))
+    await session.commit()
+
+
+def _wide_links_sets(fake_runner):
+    return fake_runner.find("net", "conf", "setparm", "photos", "wide links")
+
+
+def test_sync_sets_wide_links_yes_when_enabled(tmp_path, fake_runner):
+    fake_runner.set_response("net conf listshares", 0, "")
+
+    _run(
+        tmp_path / "wl_on.db",
+        lambda s: _seed_share(s, wide_links=True),
+        lambda s: sync(s),
+    )
+
+    sets = _wide_links_sets(fake_runner)
+    assert len(sets) == 1
+    assert sets[0]["args"][-1] == "yes"
+
+
+def test_sync_reverts_wide_links_when_flag_cleared(tmp_path, fake_runner):
+    """A stale 'yes' in the registry must be overwritten, not left behind."""
+    root = Path(__import__("os").environ["SHARE_MOUNT_PATH"])
+    fake_runner.set_response("net conf listshares", 0, "photos\n")
+    fake_runner.set_response(
+        "net conf showshare photos",
+        0,
+        "[photos]\n"
+        f"\tpath = {root / 'photos'}\n"
+        "\tcomment = NAS Manager\n"
+        "\tforce user = service-user\n"
+        "\tbrowseable = yes\n"
+        "\tvalid users = alice\n"
+        "\twrite list = \n"
+        "\tread list = alice\n"
+        "\twide links = yes\n",
+    )
+
+    report = _run(
+        tmp_path / "wl_revert.db",
+        lambda s: _seed_share(s, wide_links=False),
+        lambda s: sync(s),
+    )
+
+    assert report.updated == ["photos"]
+    assert report.params_set["photos"] == ["wide links"]
+    sets = _wide_links_sets(fake_runner)
+    assert len(sets) == 1
+    assert sets[0]["args"][-1] == "no"
+
+
+def test_sync_sets_wide_links_no_by_default(tmp_path, fake_runner):
+    fake_runner.set_response("net conf listshares", 0, "")
+
+    _run(tmp_path / "wl_off.db", lambda s: _seed_share(s), lambda s: sync(s))
+
+    sets = _wide_links_sets(fake_runner)
+    assert len(sets) == 1
+    assert sets[0]["args"][-1] == "no"
+
+
 def test_compute_target_rw_beats_ro(tmp_path):
     target = _run(
         tmp_path / "ct.db",
@@ -84,6 +155,7 @@ def test_sync_adds_removes_sets_params_once_then_noop(tmp_path, fake_runner):
         "force user",
         "read list",
         "valid users",
+        "wide links",
         "write list",
     ]
 
@@ -93,7 +165,7 @@ def test_sync_adds_removes_sets_params_once_then_noop(tmp_path, fake_runner):
     assert len(adds) == 1
 
     setparm_calls = [c for c in fake_runner.calls if "setparm" in c["args"]]
-    assert len(setparm_calls) == 6
+    assert len(setparm_calls) == 7
 
     # Second run: registry now matches the target exactly -> zero mutating commands.
     fake_runner.set_response("net conf listshares", 0, "photos\n")
@@ -107,7 +179,8 @@ def test_sync_adds_removes_sets_params_once_then_noop(tmp_path, fake_runner):
         "\tbrowseable = yes\n"
         "\tvalid users = alice bob\n"
         "\twrite list = bob\n"
-        "\tread list = alice\n",
+        "\tread list = alice\n"
+        "\twide links = no\n",
     )
     fake_runner.calls.clear()
 
@@ -138,7 +211,8 @@ def test_sync_updates_changed_params_only(tmp_path, fake_runner):
         "\tforce user = service-user\n"
         "\tbrowseable = yes\n"
         "\tvalid users = bob\n"
-        "\twrite list = bob\n",
+        "\twrite list = bob\n"
+        "\twide links = no\n",
     )
 
     report = _run(db_file, seed, lambda s: sync(s))

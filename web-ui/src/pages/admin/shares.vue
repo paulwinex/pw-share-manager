@@ -46,6 +46,19 @@
           />
         </q-td>
       </template>
+      <template v-slot:body-cell-wide_links="cell">
+        <q-td :props="cell">
+          <q-icon
+            v-if="cell.row.wide_links"
+            name="link"
+            color="warning"
+            size="18px"
+          >
+            <q-tooltip>Wide symlinks enabled</q-tooltip>
+          </q-icon>
+          <span v-else class="text-grey">—</span>
+        </q-td>
+      </template>
       <template v-slot:no-data>
         <span class="text-grey">No shares</span>
       </template>
@@ -77,6 +90,16 @@
             </template>
           </q-select>
           <q-input v-model="form.comment" label="Comment" type="textarea" />
+          <q-toggle
+            v-model="form.wide_links"
+            label="Wide symlinks"
+            color="primary"
+          />
+          <div v-if="form.wide_links" class="text-caption text-negative">
+            Symlinks inside this share will be followed even when they point
+            outside it. Anyone with access to this share can then read whatever
+            the Samba service user can read elsewhere on the server.
+          </div>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" v-close-popup />
@@ -129,7 +152,8 @@ const filteredShares = computed(() => {
 const dialogOpen = ref(false);
 const editing = ref(false);
 const editId = ref('');
-const form = ref({ name: '', path: '', comment: '' });
+const emptyForm = () => ({ name: '', path: '', comment: '', wide_links: false });
+const form = ref(emptyForm());
 const saving = ref(false);
 
 const deleteOpen = ref(false);
@@ -144,6 +168,12 @@ const columns = computed<QTableColumn[]>(() => {
   if (!$q.screen.lt.md) {
     cols.push({ name: 'comment', label: 'Comment', field: 'comment', align: 'left' });
   }
+  cols.push({
+    name: 'wide_links',
+    label: 'Symlinks',
+    field: 'wide_links',
+    align: 'left',
+  });
   cols.push({ name: 'actions', label: '', field: '', align: 'right' });
   return cols;
 });
@@ -173,14 +203,19 @@ async function loadDirs() {
 function openCreate() {
   editing.value = false;
   editId.value = '';
-  form.value = { name: '', path: '', comment: '' };
+  form.value = emptyForm();
   dialogOpen.value = true;
 }
 
 function openEdit(share: ShareOut) {
   editing.value = true;
   editId.value = share.id;
-  form.value = { name: share.name, path: share.path, comment: share.comment ?? '' };
+  form.value = {
+    name: share.name,
+    path: share.path,
+    comment: share.comment ?? '',
+    wide_links: share.wide_links,
+  };
   dialogOpen.value = true;
 }
 
@@ -194,7 +229,12 @@ function filterPath(val: string, update: (fn: () => void) => void) {
 async function save() {
   saving.value = true;
   try {
-    const payload = { name: form.value.name, path: form.value.path, comment: form.value.comment };
+    const payload = {
+      name: form.value.name,
+      path: form.value.path,
+      comment: form.value.comment,
+      wide_links: form.value.wide_links,
+    };
     if (editing.value) {
       await api.updateShare(editId.value, payload);
       $q.notify({ type: 'positive', message: 'Share updated' });

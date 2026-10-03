@@ -17,6 +17,7 @@ class TargetShare:
     valid_users: list[str] = field(default_factory=list)
     write_list: list[str] = field(default_factory=list)
     read_list: list[str] = field(default_factory=list)
+    wide_links: bool = False
 
 
 class SyncReport(BaseModel):
@@ -63,6 +64,7 @@ async def compute_target(session: AsyncSession) -> dict[str, TargetShare]:
             valid_users=valid_users,
             write_list=write_list,
             read_list=read_list,
+            wide_links=share.wide_links,
         )
     return target
 
@@ -76,6 +78,9 @@ def _desired_params(t: TargetShare) -> dict[str, str]:
         "valid users": " ".join(t.valid_users),
         "write list": " ".join(t.write_list),
         "read list": " ".join(t.read_list),
+        # Always written explicitly so that turning the option off is a
+        # real change instead of a param left behind in the registry.
+        "wide links": "yes" if t.wide_links else "no",
     }
 
 

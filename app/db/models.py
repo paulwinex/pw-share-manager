@@ -38,6 +38,8 @@ class Share(Base):
     name: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     path: Mapped[str] = mapped_column(String(255), unique=True)
     comment: Mapped[str | None] = mapped_column(String(255), default="")
+    # Expose symlinks that point outside the exported tree (Samba "wide links").
+    wide_links: Mapped[bool] = mapped_column(default=False)
 
 
 class Group(Base):
